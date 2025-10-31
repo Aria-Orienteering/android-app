@@ -4,12 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
-import android.support.design.widget.TabLayout
-import android.support.v7.app.AppCompatActivity
+import com.google.android.material.tabs.TabLayout
+import androidx.appcompat.app.AppCompatActivity
 
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager
-import android.support.v4.app.FragmentPagerAdapter
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentPagerAdapter
 import android.os.Bundle
 import android.util.Log
 import android.view.*
@@ -21,11 +21,9 @@ import com.lxdnz.nz.ariaorienteering.fragments.HomeFragment
 import com.lxdnz.nz.ariaorienteering.fragments.MapFragment
 import com.lxdnz.nz.ariaorienteering.model.User
 import com.lxdnz.nz.ariaorienteering.services.LocationService
-
-import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.fragment_main.view.*
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionListener,
         MapFragment.OnFragmentInteractionListener, HelpFragment.OnFragmentInteractionListener {
