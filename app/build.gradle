@@ -36,6 +36,9 @@ android {
         buildConfigField STRING, 'FirebaseWebClientKey', "\"${FIREBASE_WEB_CLIENT_KEY}\""
         buildConfigField STRING, 'FirebaseWebClientSecretKey', "\"${FIREBASE_WEB_CLIENT_SECRET}\""
         buildConfigField STRING, 'GoogleMapApiKey', "\"${GOOGLE_MAP_API_KEY}\""
+
+        // Inject Google Maps API Key as string resource for AndroidManifest.xml
+        resValue "string", "google_map_api_key", "${GOOGLE_MAP_API_KEY}"
     }
 
     buildFeatures {
