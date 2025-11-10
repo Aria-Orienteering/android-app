@@ -16,12 +16,11 @@ import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import kotlinx.android.synthetic.main.activity_compass.*
 import android.os.Bundle
 import androidx.core.app.ActivityCompat
 import android.view.View
 import android.view.WindowManager
-import android.widget.TextView
+import com.lxdnz.nz.ariaorienteering.databinding.ActivityCompassBinding
 import com.lxdnz.nz.ariaorienteering.dialogs.LoginDialogActivity
 
 /**
@@ -30,6 +29,7 @@ import com.lxdnz.nz.ariaorienteering.dialogs.LoginDialogActivity
 
 class CompassActivity : Activity(), SensorEventListener, LocationListener, View.OnClickListener {
 
+    private lateinit var binding: ActivityCompassBinding
 
     // Gravity for accelerometer data
     private val gravity = FloatArray(3)
@@ -50,20 +50,21 @@ class CompassActivity : Activity(), SensorEventListener, LocationListener, View.
     private var currentLocation: Location? = null
     private var geomagneticField: GeomagneticField? = null
     private var bearing = 0.0
-    private var textDirection: TextView? = null
-    private var textLat: TextView? = null
-    private var textLong: TextView? = null
+    private var textDirection: android.widget.TextView? = null
+    private var textLat: android.widget.TextView? = null
+    private var textLong: android.widget.TextView? = null
     private var compassView: CompassView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_compass)
-        textLat = findViewById(R.id.latitude)
-        textLong = findViewById(R.id.longitude)
-        textDirection = findViewById(R.id.text)
-        compassView = findViewById(R.id.compass)
-        btn_sign_out.setOnClickListener(this)
-        btn_disconnect.setOnClickListener(this)
+        binding = ActivityCompassBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        textLat = binding.latitude
+        textLong = binding.longitude
+        textDirection = binding.text
+        compassView = binding.compass
+        binding.btnSignOut.setOnClickListener(this)
+        binding.btnDisconnect.setOnClickListener(this)
         // keep screen light on (wake lock light)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
