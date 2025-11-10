@@ -15,8 +15,8 @@ object AdminTask {
         val tcs: TaskCompletionSource<Boolean> = TaskCompletionSource()
 
         mDatabaseReference.addListenerForSingleValueEvent(object : ValueEventListener{
-            override fun onCancelled(p0: DatabaseError?) {
-
+            override fun onCancelled(error: DatabaseError) {
+                tcs.setException(error.toException())
             }
 
             override fun onDataChange(snapshot: DataSnapshot) {

@@ -2,8 +2,6 @@ package com.lxdnz.nz.ariaorienteering.model
 
 import com.google.android.gms.tasks.Task
 import com.lxdnz.nz.ariaorienteering.tasks.CourseTask
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
 
 class Course {
     var id = "Z"

@@ -4,8 +4,6 @@ import android.location.Location
 import com.google.android.gms.tasks.Task
 import com.lxdnz.nz.ariaorienteering.model.types.MarkerStatus
 import com.lxdnz.nz.ariaorienteering.tasks.UserTask
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
 
 class User {
             var uid: String? = null

@@ -37,8 +37,6 @@ import com.lxdnz.nz.ariaorienteering.tasks.AdminTask
 import com.lxdnz.nz.ariaorienteering.viewmodel.UserViewModel
 
 import kotlinx.android.synthetic.main.fragment_map.*
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -387,9 +385,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         listener = null
     }
 
-    override fun onMapReady(p0: GoogleMap?) {
+    override fun onMapReady(p0: GoogleMap) {
         Log.i(TAG, "Reached OnMapReady")
-        googleMap = p0 as GoogleMap
+        googleMap = p0
         setUpMap()
     }
 

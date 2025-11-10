@@ -140,15 +140,15 @@ class LocationTrackerProvider():  LocationListener, LocationTracker {
     }
 
 
-    override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {
-        //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun onStatusChanged(p0: String, p1: Int, p2: Bundle?) {
+        // No-op for deprecated callback
     }
 
-    override fun onProviderEnabled(p0: String?) {
-        //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun onProviderEnabled(p0: String) {
+        // No-op for deprecated callback
     }
 
-    override fun onProviderDisabled(p0: String?) {
-       //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun onProviderDisabled(p0: String) {
+        // No-op for deprecated callback
     }
 }

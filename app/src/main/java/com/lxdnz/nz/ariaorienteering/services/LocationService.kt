@@ -143,7 +143,7 @@ class LocationService(): Service(), LocationTracker {
 
     inner class LocationServiceHandler(looper: Looper) : Handler(looper) {
 
-        override fun handleMessage(msg: Message?) {
+        override fun handleMessage(msg: Message) {
             synchronized(this) {
                 for(i in 0..9) {
                     try{

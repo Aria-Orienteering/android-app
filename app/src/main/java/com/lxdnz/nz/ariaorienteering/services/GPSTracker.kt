@@ -185,7 +185,7 @@ class GPSTracker(): Service(), LocationListener {
        return null
     }
 
-    override fun onLocationChanged(location: Location?) {
+    override fun onLocationChanged(location: Location) {
         // here check for Geofences and store new location to Firebase
         if (::sPref.isInitialized) {
             if (sPref.contains(ACTIVE) && sPref.getBoolean(ACTIVE, true)) {
@@ -194,21 +194,21 @@ class GPSTracker(): Service(), LocationListener {
         }
     }
 
-    override fun onStatusChanged(p0: String?, p1: Int, p2: Bundle?) {
-
+    override fun onStatusChanged(p0: String, p1: Int, p2: Bundle?) {
+        // No-op for deprecated callback
     }
 
-    override fun onProviderEnabled(p0: String?) {
-
+    override fun onProviderEnabled(p0: String) {
+        // No-op for deprecated callback
     }
 
-    override fun onProviderDisabled(p0: String?) {
-
+    override fun onProviderDisabled(p0: String) {
+        // No-op for deprecated callback
     }
 
     inner class MyServiceHandler(looper: Looper) : Handler(looper) {
 
-        override fun handleMessage(msg: Message?) {
+        override fun handleMessage(msg: Message) {
             synchronized(this) {
                 for(i in 0..9) {
                     try{
