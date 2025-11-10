@@ -18,7 +18,7 @@ import android.location.LocationListener
 import android.location.LocationManager
 import kotlinx.android.synthetic.main.activity_compass.*
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
+import androidx.core.app.ActivityCompat
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView

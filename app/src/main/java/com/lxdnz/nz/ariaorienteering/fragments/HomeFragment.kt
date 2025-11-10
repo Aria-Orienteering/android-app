@@ -1,13 +1,13 @@
 package com.lxdnz.nz.ariaorienteering.fragments
 
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
-import android.support.design.widget.FloatingActionButton
-import android.support.v4.app.Fragment
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import androidx.fragment.app.Fragment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -72,7 +72,7 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val userViewModel: UserViewModel = ViewModelProviders.of(this).get(UserViewModel::class.java)
+        val userViewModel: UserViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
         val userLiveData = userViewModel.getLiveUserData()
         userLiveData.observe(this, Observer { user: User? ->
             if (user != null) {

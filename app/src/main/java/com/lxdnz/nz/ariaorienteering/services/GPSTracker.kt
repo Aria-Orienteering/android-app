@@ -12,7 +12,7 @@ import android.app.AlertDialog
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.provider.Settings
-import android.support.v4.content.ContextCompat.startActivity
+import androidx.core.content.ContextCompat
 import android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS
 import android.widget.Toast
 import com.lxdnz.nz.ariaorienteering.model.User

@@ -13,8 +13,8 @@ import android.media.RingtoneManager
 import android.graphics.BitmapFactory
 import android.app.PendingIntent
 import android.graphics.Color
-import android.support.v4.app.NotificationCompat
-import android.support.v4.app.TaskStackBuilder
+import androidx.core.app.NotificationCompat
+import androidx.core.app.TaskStackBuilder
 
 import com.lxdnz.nz.ariaorienteering.MainActivity
 import com.lxdnz.nz.ariaorienteering.R
