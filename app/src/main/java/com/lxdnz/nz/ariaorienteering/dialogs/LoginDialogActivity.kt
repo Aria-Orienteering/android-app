@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Toast
-import kotlinx.android.synthetic.main.activity_login.*
 import com.google.android.gms.auth.api.Auth
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.firebase.auth.FirebaseAuth
@@ -14,14 +13,13 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.ConnectionResult
 import android.content.Intent
 import android.location.Location
-import com.google.android.material.textfield.TextInputLayout
 import android.view.inputmethod.InputMethodManager
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.GoogleAuthProvider
 import com.lxdnz.nz.ariaorienteering.BuildConfig
 import com.lxdnz.nz.ariaorienteering.MainActivity
-import com.lxdnz.nz.ariaorienteering.R
+import com.lxdnz.nz.ariaorienteering.databinding.ActivityLoginBinding
 import com.lxdnz.nz.ariaorienteering.model.User
 import com.lxdnz.nz.ariaorienteering.services.LocationService
 import nl.komponents.kovenant.task
@@ -33,6 +31,7 @@ import nl.komponents.kovenant.then
  */
 class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApiClient.OnConnectionFailedListener {
 
+    private lateinit var binding: ActivityLoginBinding
     private val TAG = "FirebaseGoogleSignIn"
     private val LOGGED_IN = "LOGGED_IN"
     private val REQUEST_CODE_SIGN_IN = 1234
@@ -49,14 +48,14 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_login)
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
         setFinishOnTouchOutside(false)
-        val firstNameWrapper: TextInputLayout = findViewById(R.id.firstNameWrapper)
-        firstNameWrapper.hint = "First Name"
+        binding.firstNameWrapper.hint = "First Name"
         saveState = savedInstanceState
-        btn_sign_in.setOnClickListener(this)
-        btn_sign_out.setOnClickListener(this)
-        btn_start.setOnClickListener(this)
+        binding.btnSignIn.setOnClickListener(this)
+        binding.btnSignOut.setOnClickListener(this)
+        binding.btnStart.setOnClickListener(this)
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestIdToken(WEB_CLIENT_ID)
@@ -155,14 +154,14 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
     }
 
     private fun signIn() {
-        if(firstNameWrapper.hasFocus()) {
+        if(binding.firstNameWrapper.hasFocus()) {
             hideKeyboard()
         }
-        firstName = firstNameWrapper.editText?.text.toString()
+        firstName = binding.firstNameWrapper.editText?.text.toString()
         if (firstName.isNotEmpty()) {
             doSignIn()
         } else {
-            firstNameWrapper.error = "Enter First Name"
+            binding.firstNameWrapper.error = "Enter First Name"
         }
     }
 
@@ -201,20 +200,20 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
     private fun updateUI(user: User?) {
         Log.i(TAG, "Retrieved user:" + user?.firstName)
         if (user != null) {
-            tvStatus.text = "User name: " + user.firstName
-            tvDetail.text = "User Active: "  + user.active
+            binding.tvStatus.text = "User name: " + user.firstName
+            binding.tvDetail.text = "User Active: "  + user.active
 
-            firstNameWrapper.visibility = View.GONE
-            btn_sign_in.visibility = View.GONE
-            layout_sign_out_and_start.visibility = View.VISIBLE
+            binding.firstNameWrapper.visibility = View.GONE
+            binding.btnSignIn.visibility = View.GONE
+            binding.layoutSignOutAndStart.visibility = View.VISIBLE
         } else {
-            tvStatus.text = getString(R.string.signed_out)
-            tvDetail.text = null
+            binding.tvStatus.text = getString(R.string.signed_out)
+            binding.tvDetail.text = null
 
-            firstNameWrapper.visibility = View.VISIBLE
-            firstNameWrapper.isFocused
-            btn_sign_in.visibility = View.VISIBLE
-            layout_sign_out_and_start.visibility = View.GONE
+            binding.firstNameWrapper.visibility = View.VISIBLE
+            binding.firstNameWrapper.isFocused
+            binding.btnSignIn.visibility = View.VISIBLE
+            binding.layoutSignOutAndStart.visibility = View.GONE
         }
     }
 
