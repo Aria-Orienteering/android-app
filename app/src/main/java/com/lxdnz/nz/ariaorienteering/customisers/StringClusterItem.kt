@@ -8,4 +8,16 @@ class StringClusterItem(val title: String, val latLng: LatLng) : ClusterItem {
         return latLng
     }
 
+    override fun getTitle(): String? {
+        return title
+    }
+
+    override fun getSnippet(): String? {
+        TODO("Not yet implemented")
+    }
+
+    override fun getZIndex(): Float? {
+        TODO("Not yet implemented")
+    }
+
 }

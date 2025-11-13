@@ -35,8 +35,7 @@ import com.lxdnz.nz.ariaorienteering.model.types.MarkerStatus
 import com.lxdnz.nz.ariaorienteering.services.LocationService
 import com.lxdnz.nz.ariaorienteering.tasks.AdminTask
 import com.lxdnz.nz.ariaorienteering.viewmodel.UserViewModel
-
-import kotlinx.android.synthetic.main.fragment_map.*
+import com.lxdnz.nz.ariaorienteering.databinding.FragmentMapBinding
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -58,6 +57,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private var param2: String? = null
     private var listener: OnFragmentInteractionListener? = null
     private var adminToast = false
+
+    private var _binding: FragmentMapBinding? = null
+    private val binding get() = _binding!!
 
     val TAG: String = "MapFragment"
     val MY_PERMISSIONS_REQUEST_LOCATION = 99
@@ -92,10 +94,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
-        val rootView = inflater.inflate(R.layout.fragment_map, container, false)
+        _binding = FragmentMapBinding.inflate(inflater, container, false)
+        val rootView = binding.root
 
         val sMapFragment = SupportMapFragment.newInstance()
-        mMapView = rootView.findViewById(R.id.mapView) as MapView
+        mMapView = binding.mapView
         mMapView.getMapAsync(this)
         mMapView.onCreate(savedInstanceState)
         mMapView.onResume()
@@ -127,7 +130,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
      * Updates the UI, if ADMIN then set add marker option, else move to refresh/add course markers to map
      */
     private fun adminUpdateUI(user: User) {
-        adminMarker.visibility = View.GONE
+        binding.adminMarker.visibility = View.GONE
 
         AdminTask.checkAdmin(user.firstName).addOnCompleteListener { task ->
             if (task.result) {
@@ -136,8 +139,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     adminToast = true
                 }
                 // show add marker button and set on click
-                adminMarker.visibility = View.VISIBLE
-                adminMarker.setOnClickListener(View.OnClickListener { it -> addMarker() })
+                binding.adminMarker.visibility = View.VISIBLE
+                binding.adminMarker.setOnClickListener(View.OnClickListener { it -> addMarker() })
                 // add adminOnMarkerClick to remove marker
 
             } else {
@@ -378,6 +381,11 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onLowMemory() {
         super.onLowMemory()
         mMapView.onLowMemory()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onDetach() {

@@ -22,8 +22,9 @@ import com.lxdnz.nz.ariaorienteering.MainActivity
 import com.lxdnz.nz.ariaorienteering.databinding.ActivityLoginBinding
 import com.lxdnz.nz.ariaorienteering.model.User
 import com.lxdnz.nz.ariaorienteering.services.LocationService
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 
 /**
@@ -77,9 +78,15 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
         val currentUser = mAuth!!.currentUser
         Log.i(TAG, "Current User:" + currentUser?.uid )
 
-        task {  User.retrieve(currentUser?.uid) } then
-                {task -> task.addOnCompleteListener{user -> updateUI(user.result)} }
-
+        lifecycleScope.launch {
+            try {
+                val user = User.retrieve(currentUser?.uid).await()
+                updateUI(user)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error retrieving user", e)
+                updateUI(null)
+            }
+        }
     }
 
     override fun onClick(view: View?) {
@@ -175,14 +182,16 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
         // deactivate user
         Toast.makeText(this, "Signing Out", Toast.LENGTH_LONG).show()
         val currentUser = mAuth!!.currentUser
-        task { User.deactivate(currentUser?.uid) } then {
-            task -> task.addOnCompleteListener {
-
+        lifecycleScope.launch {
+            try {
+                User.deactivate(currentUser?.uid).await()
                 // sign out Firebase
                 mAuth!!.signOut()
                 // sign out Google
                 Auth.GoogleSignInApi.signOut(mGoogleApiClient).setResultCallback { updateUI(null) }
                 saveState?.putBoolean(LOGGED_IN, false)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during sign out", e)
             }
         }
     }

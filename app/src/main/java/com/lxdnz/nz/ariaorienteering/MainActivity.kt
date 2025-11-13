@@ -133,14 +133,24 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
             Log.i("Main", "Firebase User active")
             if (sharedPreferences.contains(ACTIVE)) {
                 if (sharedPreferences.getBoolean(ACTIVE, false)) {
-                    task { User.activate(mAuth.currentUser!!.uid) } then { it ->
-                        it.addOnCompleteListener { activateLocalUser() }
+                    lifecycleScope.launch {
+                        try {
+                            User.activate(mAuth.currentUser!!.uid).await()
+                            activateLocalUser()
+                        } catch (e: Exception) {
+                            Log.e("Main", "Error activating user", e)
+                        }
                     }
                 } else {
-                    task { User.retrieve(mAuth.currentUser!!.uid) } then { it ->
-                        it.addOnCompleteListener { user -> if (!user.result.active) {
-                            Log.i("Main", "Adjusting user active")
-                            User.activate(user.result.uid)}
+                    lifecycleScope.launch {
+                        try {
+                            val user = User.retrieve(mAuth.currentUser!!.uid).await()
+                            if (!user.active) {
+                                Log.i("Main", "Adjusting user active")
+                                User.activate(user.uid).await()
+                            }
+                        } catch (e: Exception) {
+                            Log.e("Main", "Error retrieving/activating user", e)
                         }
                     }
                 }

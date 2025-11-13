@@ -26,8 +26,9 @@ import com.lxdnz.nz.ariaorienteering.model.types.ImageType
 import com.lxdnz.nz.ariaorienteering.model.types.MarkerStatus
 import com.lxdnz.nz.ariaorienteering.services.LocationService
 import com.lxdnz.nz.ariaorienteering.viewmodel.UserViewModel
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -191,11 +192,14 @@ class HomeFragment : Fragment() {
 
         val homeMarker = Marker(1000, ImageType.DEFAULT, currentLocation!!.latitude, currentLocation.longitude)
 
-        task { Course.selectRandomCourse() } then { task ->
-            task.addOnCompleteListener { course ->
-
+        lifecycleScope.launch {
+            try {
+                val course = Course.selectRandomCourse().await()
                 homeMarker.status = MarkerStatus.NOT_FOUND
-                User.addCourse(course.result, homeMarker)
+                User.addCourse(course, homeMarker)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error selecting random course", e)
+                Toast.makeText(requireContext(), "Error selecting course", Toast.LENGTH_SHORT).show()
             }
         }
     }
