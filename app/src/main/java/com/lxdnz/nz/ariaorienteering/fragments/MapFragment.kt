@@ -347,7 +347,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         mClusterManager.setOnClusterItemClickListener() {
 
-            it -> User.targetMarker(it.title)
+            it -> it.title?.let { title -> User.targetMarker(title) }
             Log.i(TAG, "Clicking Cluster Item")
             true
         }

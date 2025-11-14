@@ -19,6 +19,7 @@ import com.google.android.gms.location.LocationServices
 import com.google.firebase.auth.GoogleAuthProvider
 import com.lxdnz.nz.ariaorienteering.BuildConfig
 import com.lxdnz.nz.ariaorienteering.MainActivity
+import com.lxdnz.nz.ariaorienteering.R
 import com.lxdnz.nz.ariaorienteering.databinding.ActivityLoginBinding
 import com.lxdnz.nz.ariaorienteering.model.User
 import com.lxdnz.nz.ariaorienteering.services.LocationService
