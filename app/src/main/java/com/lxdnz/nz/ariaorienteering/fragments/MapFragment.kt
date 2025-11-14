@@ -157,7 +157,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
      */
     private fun addMarker() {
         val markerDialog = AddMarkerDialog()
-        markerDialog.show(fragmentManager, "AddMarkerDialog")
+        markerDialog.show(parentFragmentManager, "AddMarkerDialog")
     }
 
     private fun setUpMap() {
@@ -233,7 +233,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
      */
     private fun setClusterManger(clusterManager: ClusterManager<StringClusterItem>,
                                  status: MarkerStatus) {
-        googleMap.setOnCameraChangeListener(clusterManager)
+        // Use the modern API instead of deprecated setOnCameraChangeListener
+        googleMap.setOnCameraIdleListener(clusterManager)
         val renderer = CustomClusterRenderer(mContext, googleMap, clusterManager, status)
         clusterManager.setRenderer(renderer)
     }

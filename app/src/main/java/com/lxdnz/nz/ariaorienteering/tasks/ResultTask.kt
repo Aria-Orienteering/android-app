@@ -12,6 +12,8 @@ object ResultTask {
     val mDatabaseReference: DatabaseReference = db.getReference("results")
 
     fun create(result: Result) {
-        mDatabaseReference.child(result.uid).setValue(result)
+        if (result.uid != null) {
+            mDatabaseReference.child(result.uid!!).setValue(result)
+        }
     }
 }

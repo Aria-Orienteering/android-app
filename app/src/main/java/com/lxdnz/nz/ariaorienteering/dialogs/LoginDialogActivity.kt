@@ -104,8 +104,8 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
 
         // Result returned from launching the Intent from GoogleSignInApi.getSignInIntent();
         if (requestCode == REQUEST_CODE_SIGN_IN) {
-            val result = Auth.GoogleSignInApi.getSignInResultFromIntent(data)
-            if (result.isSuccess) {
+            val result = Auth.GoogleSignInApi.getSignInResultFromIntent(data!!)
+            if (result?.isSuccess == true) {
                 // successful -> authenticate with Firebase
                 val account = result.signInAccount
                 firebaseAuthWithGoogle(account!!)
@@ -174,7 +174,7 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
 
     private fun doSignIn() {
         Toast.makeText(this, "Signing In", Toast.LENGTH_LONG).show()
-        val intent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient)
+        val intent = Auth.GoogleSignInApi.getSignInIntent(mGoogleApiClient!!)
         startActivityForResult(intent, REQUEST_CODE_SIGN_IN)
     }
 
@@ -188,7 +188,7 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
                 // sign out Firebase
                 mAuth!!.signOut()
                 // sign out Google
-                Auth.GoogleSignInApi.signOut(mGoogleApiClient).setResultCallback { updateUI(null) }
+                Auth.GoogleSignInApi.signOut(mGoogleApiClient!!).setResultCallback { updateUI(null) }
                 saveState?.putBoolean(LOGGED_IN, false)
             } catch (e: Exception) {
                 Log.e(TAG, "Error during sign out", e)
@@ -201,7 +201,7 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
         mAuth!!.signOut()
 
         // revoke access Google
-        Auth.GoogleSignInApi.revokeAccess(mGoogleApiClient).setResultCallback { updateUI(null) }
+        Auth.GoogleSignInApi.revokeAccess(mGoogleApiClient!!).setResultCallback { updateUI(null) }
         saveState?.putBoolean(LOGGED_IN, false)
     }
 
@@ -227,7 +227,7 @@ class LoginDialogActivity : AppCompatActivity(), View.OnClickListener, GoogleApi
     }
 
     private fun hideKeyboard() {
-        val view: View = currentFocus
+        val view: View? = currentFocus
         view?.let {
             (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                     .hideSoftInputFromInputMethod(view.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)

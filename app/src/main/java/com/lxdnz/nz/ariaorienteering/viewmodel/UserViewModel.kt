@@ -2,7 +2,7 @@ package com.lxdnz.nz.ariaorienteering.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.Transformations
+import androidx.lifecycle.map
 import androidx.arch.core.util.Function
 import androidx.annotation.NonNull
 import com.google.firebase.auth.FirebaseAuth
@@ -16,7 +16,9 @@ class UserViewModel: ViewModel() {
     val USER_REF: DatabaseReference = FirebaseDatabase.getInstance().getReference("users")
     val mAuth = FirebaseAuth.getInstance()
     val liveData = FirebaseQueryLiveData(USER_REF.child(mAuth.currentUser!!.uid))
-    val userLiveData: LiveData<User?> = Transformations.map(liveData, Deserializer())
+    val userLiveData: LiveData<User?> = liveData.map { dataSnapshot ->
+        dataSnapshot.getValue(User::class.java)
+    }
 
     inner class Deserializer: Function<DataSnapshot, User?> {
 

@@ -50,7 +50,9 @@ object UserTask {
         }
 
         fun createTask(user: User) {
-            mDatabaseReference.child(user.uid).setValue(user)
+            if (user.uid != null) {
+                mDatabaseReference.child(user.uid!!).setValue(user)
+            }
         }
 
         fun updateTask(user: User) {

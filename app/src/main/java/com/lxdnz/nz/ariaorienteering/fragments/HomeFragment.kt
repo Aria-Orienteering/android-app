@@ -168,7 +168,7 @@ class HomeFragment : Fragment() {
                 MotionEvent.ACTION_UP -> {
                     if (Math.abs(startX - event.rawX) < 10 && Math.abs(startY - event.rawY)  < 10) {
                         when(button) {
-                            startActionButton -> {
+                            binding.startActionButton -> {
                                 Toast.makeText(v.context, "Selecting Random Course", Toast.LENGTH_SHORT).show()
                                 selectRandomCourse()
                                 startTimer()

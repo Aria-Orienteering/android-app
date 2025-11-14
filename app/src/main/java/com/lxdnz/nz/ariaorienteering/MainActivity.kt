@@ -226,7 +226,7 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
      */
     inner class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
 
-        override fun getItem(position: Int): Fragment? = when (position) {
+        override fun getItem(position: Int): Fragment = when (position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
             //return PlaceholderFragment.newInstance(position + 1)
@@ -234,7 +234,7 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
             // Other Fragments Here
             1 -> MapFragment.newInstance(position.toString(), "")
             2 -> HelpFragment.newInstance(position.toString(), "")
-            else -> null
+            else -> PlaceholderFragment()
         }
 
         override fun getCount(): Int {
@@ -252,7 +252,7 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
         private val binding get() = _binding!!
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                                  savedInstanceState: Bundle?): View? {
+                                  savedInstanceState: Bundle?): View {
             _binding = FragmentMainBinding.inflate(inflater, container, false)
             binding.sectionLabel.text = getString(R.string.section_format, arguments?.getInt(ARG_SECTION_NUMBER))
             return binding.root
