@@ -78,7 +78,7 @@ class HomeFragment : Fragment() {
 
         val userViewModel: UserViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
         val userLiveData = userViewModel.getLiveUserData()
-        userLiveData.observe(this, Observer { user: User? ->
+        userLiveData.observe(viewLifecycleOwner, Observer { user: User? ->
             if (user != null) {
                 Log.i(TAG, "update from Observer")
                 updateUI(user)

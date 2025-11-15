@@ -104,7 +104,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mMapView.onResume()
 
         try {
-            MapsInitializer.initialize(getActivity()!!.applicationContext)
+            MapsInitializer.initialize(requireActivity().applicationContext)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -117,7 +117,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         val userViewModel: UserViewModel = ViewModelProvider(this)
                 .get(UserViewModel::class.java)
         val userLiveData = userViewModel.getLiveUserData()
-        userLiveData.observe(this, Observer { user: User? ->
+        userLiveData.observe(viewLifecycleOwner, Observer { user: User? ->
             if (user != null) {
                 adminUpdateUI(user)
             }
