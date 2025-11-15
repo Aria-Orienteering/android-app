@@ -2,38 +2,21 @@ package com.lxdnz.nz.ariaorienteering
 
 import com.google.android.gms.tasks.TaskCompletionSource
 import com.google.firebase.database.*
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.DataSnapshot
 import com.lxdnz.nz.ariaorienteering.model.Marker
 import com.lxdnz.nz.ariaorienteering.model.Course
 import com.lxdnz.nz.ariaorienteering.model.types.ImageType
-
 import org.junit.Before
+import org.junit.After
 import org.junit.Test
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4
-import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.modules.junit4.PowerMockRunnerDelegate
-
-import org.mockito.Matchers.any
-import org.mockito.Matchers.anyString
-import org.mockito.Mockito.doAnswer
-
 import org.junit.Assert.*
+import io.mockk.*
 
-
-
-@RunWith(PowerMockRunner::class)
-@PowerMockRunnerDelegate(JUnit4::class)
-@PrepareForTest(FirebaseDatabase::class)
 class CourseUnitTest{
 
-    lateinit var mockedDatabaseReference: DatabaseReference
-    lateinit var testCourse: Course
-    lateinit var mockMarkerList: MutableList<Marker>
+    private lateinit var mockedDatabaseReference: DatabaseReference
+    private lateinit var mockedFirebaseDatabase: FirebaseDatabase
+    private lateinit var testCourse: Course
+    private lateinit var mockMarkerList: MutableList<Marker>
 
     @Before
     fun before() {
@@ -43,12 +26,20 @@ class CourseUnitTest{
         mockMarkerList = mutableListOf(marker1, marker2)
         testCourse = Course("A", 5, mockMarkerList)
 
-        // Mock the Firebase References
-        mockedDatabaseReference = PowerMockito.mock(DatabaseReference::class.java)
-        val mockedFirebaseDatabase = PowerMockito.mock(FirebaseDatabase::class.java)
-        PowerMockito.`when`(mockedFirebaseDatabase.reference).thenReturn(mockedDatabaseReference)
-        PowerMockito.mockStatic(FirebaseDatabase::class.java)
-        PowerMockito.`when`(FirebaseDatabase.getInstance()).thenReturn(mockedFirebaseDatabase)
+        // Mock the Firebase References using MockK
+        mockedDatabaseReference = mockk<DatabaseReference>(relaxed = true)
+        mockedFirebaseDatabase = mockk<FirebaseDatabase>()
+        
+        // Mock static FirebaseDatabase
+        mockkStatic(FirebaseDatabase::class)
+        every { FirebaseDatabase.getInstance() } returns mockedFirebaseDatabase
+        every { mockedFirebaseDatabase.reference } returns mockedDatabaseReference
+    }
+
+    @After
+    fun tearDown() {
+        // Clean up static mocks
+        unmockkStatic(FirebaseDatabase::class)
     }
 
     /**
@@ -56,7 +47,8 @@ class CourseUnitTest{
      */
     @Test
     fun createCourseTaskTest() {
-        PowerMockito.`when`(mockedDatabaseReference.child(anyString())).thenReturn(mockedDatabaseReference)
+        every { mockedDatabaseReference.child(any()) } returns mockedDatabaseReference
+        
         // then do Task<Course>
         val tcs: TaskCompletionSource<Course> = TaskCompletionSource()
         mockedDatabaseReference.child(testCourse.id).setValue(testCourse)
@@ -76,22 +68,33 @@ class CourseUnitTest{
      */
     @Test
     fun retrieveCourseTest() {
-        PowerMockito.`when`(mockedDatabaseReference.child(anyString())).thenReturn(mockedDatabaseReference)
+        every { mockedDatabaseReference.child(any()) } returns mockedDatabaseReference
 
-        doAnswer { invocation ->
-            val valueEventListener = invocation.arguments[0] as ValueEventListener
+        val valueEventListenerSlot = slot<ValueEventListener>()
+        every { 
+            mockedDatabaseReference.addListenerForSingleValueEvent(capture(valueEventListenerSlot))
+        } answers {
+            val listener = valueEventListenerSlot.captured
+            
+            val mockedDataSnapshot = mockk<DataSnapshot>(relaxed = true)
+            listener.onDataChange(mockedDataSnapshot)
 
-            val mockedDataSnapshot = Mockito.mock(DataSnapshot::class.java)
-            //when(mockedDataSnapshot.getValue(Course::class.java)).thenReturn(testOrMockedUser)
+            val mockedDatabaseError = mockk<DatabaseError>(relaxed = true)
+            listener.onCancelled(mockedDatabaseError)
+            
+            mockedDatabaseReference
+        }
 
-            valueEventListener.onDataChange(mockedDataSnapshot)
+        // Trigger the listener by calling the method
+        mockedDatabaseReference.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // Callback would happen here
+            }
 
-            val mockedDatabaseError = Mockito.mock(DatabaseError::class.java)
-            valueEventListener.onCancelled(mockedDatabaseError)
-
-            null
-        }.`when`(mockedDatabaseReference).addListenerForSingleValueEvent(any(ValueEventListener::class.java))
-
+            override fun onCancelled(error: DatabaseError) {
+                // Error callback would happen here
+            }
+        })
     }
 
     /**
