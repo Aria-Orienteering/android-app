@@ -2,8 +2,8 @@ package com.lxdnz.nz.ariaorienteering.fragments
 
 import android.Manifest
 import android.app.Activity
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,9 +12,9 @@ import android.location.Location
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.support.v4.app.ActivityCompat
-import android.support.v4.app.Fragment
-import android.support.v4.content.ContextCompat
+import androidx.core.app.ActivityCompat
+import androidx.fragment.app.Fragment
+import androidx.core.content.ContextCompat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -35,10 +35,7 @@ import com.lxdnz.nz.ariaorienteering.model.types.MarkerStatus
 import com.lxdnz.nz.ariaorienteering.services.LocationService
 import com.lxdnz.nz.ariaorienteering.tasks.AdminTask
 import com.lxdnz.nz.ariaorienteering.viewmodel.UserViewModel
-
-import kotlinx.android.synthetic.main.fragment_map.*
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
+import com.lxdnz.nz.ariaorienteering.databinding.FragmentMapBinding
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -60,6 +57,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private var param2: String? = null
     private var listener: OnFragmentInteractionListener? = null
     private var adminToast = false
+
+    private var _binding: FragmentMapBinding? = null
+    private val binding get() = _binding!!
 
     val TAG: String = "MapFragment"
     val MY_PERMISSIONS_REQUEST_LOCATION = 99
@@ -94,16 +94,17 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
-        val rootView = inflater.inflate(R.layout.fragment_map, container, false)
+        _binding = FragmentMapBinding.inflate(inflater, container, false)
+        val rootView = binding.root
 
         val sMapFragment = SupportMapFragment.newInstance()
-        mMapView = rootView.findViewById(R.id.mapView) as MapView
+        mMapView = binding.mapView
         mMapView.getMapAsync(this)
         mMapView.onCreate(savedInstanceState)
         mMapView.onResume()
 
         try {
-            MapsInitializer.initialize(getActivity()!!.applicationContext)
+            MapsInitializer.initialize(requireActivity().applicationContext)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -113,11 +114,10 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         /**
          * Keep track of the current user with the View Model and update UI accordingly
          */
-        val userViewModel: UserViewModel = ViewModelProviders
-                .of(this)
+        val userViewModel: UserViewModel = ViewModelProvider(this)
                 .get(UserViewModel::class.java)
         val userLiveData = userViewModel.getLiveUserData()
-        userLiveData.observe(this, Observer { user: User? ->
+        userLiveData.observe(viewLifecycleOwner, Observer { user: User? ->
             if (user != null) {
                 adminUpdateUI(user)
             }
@@ -130,7 +130,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
      * Updates the UI, if ADMIN then set add marker option, else move to refresh/add course markers to map
      */
     private fun adminUpdateUI(user: User) {
-        adminMarker.visibility = View.GONE
+        binding.adminMarker.visibility = View.GONE
 
         AdminTask.checkAdmin(user.firstName).addOnCompleteListener { task ->
             if (task.result) {
@@ -139,8 +139,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                     adminToast = true
                 }
                 // show add marker button and set on click
-                adminMarker.visibility = View.VISIBLE
-                adminMarker.setOnClickListener(View.OnClickListener { it -> addMarker() })
+                binding.adminMarker.visibility = View.VISIBLE
+                binding.adminMarker.setOnClickListener(View.OnClickListener { it -> addMarker() })
                 // add adminOnMarkerClick to remove marker
 
             } else {
@@ -157,7 +157,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
      */
     private fun addMarker() {
         val markerDialog = AddMarkerDialog()
-        markerDialog.show(fragmentManager, "AddMarkerDialog")
+        markerDialog.show(parentFragmentManager, "AddMarkerDialog")
     }
 
     private fun setUpMap() {
@@ -233,7 +233,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
      */
     private fun setClusterManger(clusterManager: ClusterManager<StringClusterItem>,
                                  status: MarkerStatus) {
-        googleMap.setOnCameraChangeListener(clusterManager)
+        // Use the modern API instead of deprecated setOnCameraChangeListener
+        googleMap.setOnCameraIdleListener(clusterManager)
         val renderer = CustomClusterRenderer(mContext, googleMap, clusterManager, status)
         clusterManager.setRenderer(renderer)
     }
@@ -346,7 +347,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         mClusterManager.setOnClusterItemClickListener() {
 
-            it -> User.targetMarker(it.title)
+            it -> it.title?.let { title -> User.targetMarker(title) }
             Log.i(TAG, "Clicking Cluster Item")
             true
         }
@@ -383,14 +384,19 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mMapView.onLowMemory()
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
     override fun onDetach() {
         super.onDetach()
         listener = null
     }
 
-    override fun onMapReady(p0: GoogleMap?) {
+    override fun onMapReady(p0: GoogleMap) {
         Log.i(TAG, "Reached OnMapReady")
-        googleMap = p0 as GoogleMap
+        googleMap = p0
         setUpMap()
     }
 

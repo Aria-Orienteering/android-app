@@ -1,13 +1,13 @@
 package com.lxdnz.nz.ariaorienteering.fragments
 
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.os.SystemClock
-import android.support.design.widget.FloatingActionButton
-import android.support.v4.app.Fragment
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import androidx.fragment.app.Fragment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -18,6 +18,7 @@ import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
 
 import com.lxdnz.nz.ariaorienteering.R
+import com.lxdnz.nz.ariaorienteering.databinding.FragmentHomeBinding
 import com.lxdnz.nz.ariaorienteering.model.Course
 import com.lxdnz.nz.ariaorienteering.model.Marker
 import com.lxdnz.nz.ariaorienteering.model.User
@@ -25,10 +26,9 @@ import com.lxdnz.nz.ariaorienteering.model.types.ImageType
 import com.lxdnz.nz.ariaorienteering.model.types.MarkerStatus
 import com.lxdnz.nz.ariaorienteering.services.LocationService
 import com.lxdnz.nz.ariaorienteering.viewmodel.UserViewModel
-import kotlinx.android.synthetic.main.fragment_help.view.*
-import kotlinx.android.synthetic.main.fragment_home.*
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -51,6 +51,9 @@ class HomeFragment : Fragment() {
     private var listener: OnFragmentInteractionListener? = null
     private var gameTime:Long = 0
 
+    private var _binding: FragmentHomeBinding? = null
+    private val binding get() = _binding!!
+
     private val TAG = "Home Fragment"
     private var toastCount = 0
 
@@ -65,28 +68,34 @@ class HomeFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_home, container, false)
+        _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     // make changes here to id'd view items
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val userViewModel: UserViewModel = ViewModelProviders.of(this).get(UserViewModel::class.java)
+        val userViewModel: UserViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
         val userLiveData = userViewModel.getLiveUserData()
-        userLiveData.observe(this, Observer { user: User? ->
+        userLiveData.observe(viewLifecycleOwner, Observer { user: User? ->
             if (user != null) {
                 Log.i(TAG, "update from Observer")
                 updateUI(user)
             }
         })
 
-        activateButton(startActionButton)
+        activateButton(binding.startActionButton)
 
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
     fun updateUI(user: User) {
-        home_text.text = getString(R.string.change_home) + ' ' + user.firstName
+        binding.homeText.text = getString(R.string.change_home) + ' ' + user.firstName
         if (user.courseObject != null) {
             // check for All course markers complete then stop timer
             if (checkMarkersFound(user.courseObject?.markers)) {
@@ -101,12 +110,12 @@ class HomeFragment : Fragment() {
                         Log.i(TAG, "found markers, home Active")
                         if (user.homeMarker!!.status.equals(MarkerStatus.FOUND) && toastCount == 1) {
                             // do this bit when home marker is found
-                            timerMeter.stop()
+                            binding.timerMeter.stop()
                             Toast.makeText(requireContext(), "You have finished", Toast.LENGTH_SHORT).show()
                             toastCount++
                             // make startButton visible
-                            startActionButton.visibility = View.VISIBLE
-                            startText.visibility = View.VISIBLE
+                            binding.startActionButton.visibility = View.VISIBLE
+                            binding.startText.visibility = View.VISIBLE
                         }
                     }
                 }
@@ -115,17 +124,17 @@ class HomeFragment : Fragment() {
         when (toastCount)
         {
             0 -> {if (user.courseObject != null){
-                course_selected.text = getString(R.string.select_course) + ' ' + user.courseObject!!.id
+                binding.courseSelected.text = getString(R.string.select_course) + ' ' + user.courseObject!!.id
                 } else {
-                course_selected.text = getString(R.string.no_course)
+                binding.courseSelected.text = getString(R.string.no_course)
             }
             }
-            1 -> {course_selected.text = "Congratulations! " + user.firstName + " you found all the markers. Head for Home"}
-            else -> {course_selected.text = "Congratulations! " + user.firstName + " you made it Home"
+            1 -> {binding.courseSelected.text = "Congratulations! " + user.firstName + " you found all the markers. Head for Home"}
+            else -> {binding.courseSelected.text = "Congratulations! " + user.firstName + " you made it Home"
                 // update user status
                 if (user.homeActive) {
                     Log.i(TAG, "finishing course")
-                    User.finishCourse(timerMeter.text.toString())
+                    User.finishCourse(binding.timerMeter.text.toString())
                 }
             }
         }
@@ -159,7 +168,7 @@ class HomeFragment : Fragment() {
                 MotionEvent.ACTION_UP -> {
                     if (Math.abs(startX - event.rawX) < 10 && Math.abs(startY - event.rawY)  < 10) {
                         when(button) {
-                            startActionButton -> {
+                            binding.startActionButton -> {
                                 Toast.makeText(v.context, "Selecting Random Course", Toast.LENGTH_SHORT).show()
                                 selectRandomCourse()
                                 startTimer()
@@ -183,11 +192,14 @@ class HomeFragment : Fragment() {
 
         val homeMarker = Marker(1000, ImageType.DEFAULT, currentLocation!!.latitude, currentLocation.longitude)
 
-        task { Course.selectRandomCourse() } then { task ->
-            task.addOnCompleteListener { course ->
-
+        lifecycleScope.launch {
+            try {
+                val course = Course.selectRandomCourse().await()
                 homeMarker.status = MarkerStatus.NOT_FOUND
-                User.addCourse(course.result, homeMarker)
+                User.addCourse(course, homeMarker)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error selecting random course", e)
+                Toast.makeText(requireContext(), "Error selecting course", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -195,12 +207,12 @@ class HomeFragment : Fragment() {
     private fun startTimer() {
 
         //start timer
-        timerMeter.base = SystemClock.elapsedRealtime() + gameTime
-        timerMeter.start()
+        binding.timerMeter.base = SystemClock.elapsedRealtime() + gameTime
+        binding.timerMeter.start()
         toastCount == 0
         // make start button inaccessible
-        startActionButton.visibility = View.GONE
-        startText.visibility = View.GONE
+        binding.startActionButton.visibility = View.GONE
+        binding.startText.visibility = View.GONE
     }
 
     // TODO: Rename method, update argument and hook method into UI event

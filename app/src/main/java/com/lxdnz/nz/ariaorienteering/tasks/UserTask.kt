@@ -11,8 +11,9 @@ import com.lxdnz.nz.ariaorienteering.model.Marker
 import com.lxdnz.nz.ariaorienteering.model.Result
 import com.lxdnz.nz.ariaorienteering.model.User
 import com.lxdnz.nz.ariaorienteering.model.types.MarkerStatus
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 /**
  * An object class that handles tasks for all User class objects
@@ -30,21 +31,28 @@ object UserTask {
             val tcs: TaskCompletionSource<User> = TaskCompletionSource()
 
             mDatabaseReference.child(uid).addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onCancelled(p0: DatabaseError?) {
-
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e("retrieveTask", "Error retrieving user", error.toException())
+                    tcs.setException(error.toException())
                 }
 
                 override fun onDataChange(snapshot: DataSnapshot) {
                     val user = snapshot.getValue(User::class.java)
-                    Log.i("onDataChange", user?.uid + ":" + user?.firstName)
-                    tcs.setResult(user)
+                    if (user != null) {
+                        Log.i("onDataChange", user.uid + ":" + user.firstName)
+                        tcs.setResult(user)
+                    } else {
+                        tcs.setException(Exception("User not found"))
+                    }
                 }
             })
             return tcs.task
         }
 
         fun createTask(user: User) {
-            mDatabaseReference.child(user.uid).setValue(user)
+            if (user.uid != null) {
+                mDatabaseReference.child(user.uid!!).setValue(user)
+            }
         }
 
         fun updateTask(user: User) {
@@ -55,56 +63,66 @@ object UserTask {
             Log.i("start MoveTask", " Checking user " + auth.currentUser)
             if (auth.currentUser != null) {
                 Log.i("moveTask", " User is not null")
-                task {
-                    retrieveTask(auth.currentUser!!.uid)
-                } then { task ->
-                    task.addOnCompleteListener { user ->
-                        val moveUser = user.result
-                        if (location != null) {
+                GlobalScope.launch {
+                    try {
+                        val moveUser = retrieveTask(auth.currentUser!!.uid).await()
+                        if (location != null && moveUser != null) {
                             moveUser.lon = location.longitude
                             moveUser.lat = location.latitude
                             updateTask(moveUser)
                         }
+                    } catch (e: Exception) {
+                        Log.e("moveTask", "Error updating user location", e)
                     }
                 }
             }
         }
 
         fun addCourseTask(course: Course?, marker: Marker) {
-            task {
-                retrieveTask(auth.currentUser!!.uid)
-            } then {
-                task -> task.addOnCompleteListener {
-                    user -> val courseUser = user.result
-                    // associate the course to the user
-                    courseUser.courseObject = course
-                    course?.markers?.forEach({marker ->
-                        marker.status = MarkerStatus.NOT_FOUND})
-                    // add homeMarker and de-activate to current User
-                    courseUser.homeActive = false
-                    courseUser.homeMarker = marker
-                    // update the user
-                    updateTask(courseUser)
+            GlobalScope.launch {
+                try {
+                    val courseUser = retrieveTask(auth.currentUser!!.uid).await()
+                    if (courseUser != null) {
+                        // associate the course to the user
+                        courseUser.courseObject = course
+                        course?.markers?.forEach({ marker ->
+                            marker.status = MarkerStatus.NOT_FOUND })
+                        // add homeMarker and de-activate to current User
+                        courseUser.homeActive = false
+                        courseUser.homeMarker = marker
+                        // update the user
+                        updateTask(courseUser)
+                    }
+                } catch (e: Exception) {
+                    Log.e("addCourseTask", "Error adding course to user", e)
                 }
             }
         }
 
         fun deactivateUserTask(uid: String): Task<User> {
             val tcs: TaskCompletionSource<User> = TaskCompletionSource()
-            task { User.retrieve(uid) } then { task ->
-                task.addOnCompleteListener { user ->
-                    val deactivateUser = user.result
+            GlobalScope.launch {
+                try {
+                    val deactivateUser = User.retrieve(uid).await()
                     deactivateUser.active = false
                     updateTask(deactivateUser)
-                    task { User.retrieve(uid) } then {
-                        res -> res.addOnCompleteListener { it ->
-                        if (it.result.active) {
-                            deactivateUserTask(uid)
-                        } else {
-                            tcs.setResult(it.result)
+
+                    val verifyUser = User.retrieve(uid).await()
+                    if (verifyUser.active) {
+                        // Recursively deactivate if still active
+                        deactivateUserTask(uid).addOnCompleteListener { result ->
+                            if (result.isSuccessful) {
+                                tcs.setResult(result.result)
+                            } else {
+                                tcs.setException(result.exception ?: Exception("Deactivation failed"))
+                            }
                         }
+                    } else {
+                        tcs.setResult(verifyUser)
                     }
-                    }
+                } catch (e: Exception) {
+                    Log.e("deactivateUserTask", "Error deactivating user", e)
+                    tcs.setException(e)
                 }
             }
             return tcs.task
@@ -112,22 +130,28 @@ object UserTask {
 
         fun activateUserTask(uid: String): Task<User> {
             val tcs: TaskCompletionSource<User> = TaskCompletionSource()
-            task { User.retrieve(uid) } then { task ->
-                task.addOnCompleteListener { user ->
-                    val activateUser = user.result
+            GlobalScope.launch {
+                try {
+                    val activateUser = User.retrieve(uid).await()
                     activateUser.active = true
                     updateTask(activateUser)
-                    task {
-                        User.retrieve(uid)
-                    } then {
-                        res -> res.addOnCompleteListener { it ->
-                        if (!it.result.active) {
-                            activateUserTask(uid)}
-                        else {
-                            tcs.setResult(it.result)
+
+                    val verifyUser = User.retrieve(uid).await()
+                    if (!verifyUser.active) {
+                        // Recursively activate if not active
+                        activateUserTask(uid).addOnCompleteListener { result ->
+                            if (result.isSuccessful) {
+                                tcs.setResult(result.result)
+                            } else {
+                                tcs.setException(result.exception ?: Exception("Activation failed"))
                             }
                         }
+                    } else {
+                        tcs.setResult(verifyUser)
                     }
+                } catch (e: Exception) {
+                    Log.e("activateUserTask", "Error activating user", e)
+                    tcs.setException(e)
                 }
             }
             return tcs.task
@@ -136,7 +160,6 @@ object UserTask {
     fun findMarkerTask(marker: Marker) {
         // write the inner function / implementation code
         fun updateMarker(updateMarker: Marker, course: Course?) {
-
             val findMarker = course!!.markers.find { it -> it.id == updateMarker.id }
             if(findMarker != null){
                 val index = course.markers.indexOf(findMarker)
@@ -146,11 +169,15 @@ object UserTask {
             }
         }
 
-        task { retrieveTask(auth.currentUser!!.uid)} then {
-            task -> task.addOnCompleteListener {
-                user -> val findUser = user.result
-                updateMarker(marker, findUser.courseObject)
-                updateTask(findUser)
+        GlobalScope.launch {
+            try {
+                val findUser = retrieveTask(auth.currentUser!!.uid).await()
+                if (findUser != null) {
+                    updateMarker(marker, findUser.courseObject)
+                    updateTask(findUser)
+                }
+            } catch (e: Exception) {
+                Log.e("findMarkerTask", "Error finding marker", e)
             }
         }
     }
@@ -158,7 +185,6 @@ object UserTask {
     fun targetMarker(id : String) {
         // write the inner function / implementation code
         fun updateMarkerToTarget(course: Course?) {
-
             // first find any existing TARGET markers and set to NOT_FOUND
             val targetMarkers = course!!.markers.filter { it -> it.status.equals(MarkerStatus.TARGET) }
             targetMarkers.forEach({marker ->
@@ -178,40 +204,50 @@ object UserTask {
             }
         }
 
-        task { retrieveTask(auth.currentUser!!.uid)} then {
-            task -> task.addOnCompleteListener {
-                user -> val findUser = user.result
-                updateMarkerToTarget(findUser.courseObject)
-                updateTask(findUser)
+        GlobalScope.launch {
+            try {
+                val findUser = retrieveTask(auth.currentUser!!.uid).await()
+                if (findUser != null) {
+                    updateMarkerToTarget(findUser.courseObject)
+                    updateTask(findUser)
+                }
+            } catch (e: Exception) {
+                Log.e("targetMarker", "Error targeting marker", e)
             }
         }
     }
 
     fun homeMarkerTask(marker: Marker, active: Boolean) {
-        task { retrieveTask(auth.currentUser!!.uid)} then {
-            task -> task.addOnCompleteListener {
-                user -> val findUser = user.result
-                findUser.homeActive = active
-                findUser.homeMarker = marker
-                updateTask(findUser)
+        GlobalScope.launch {
+            try {
+                val findUser = retrieveTask(auth.currentUser!!.uid).await()
+                if (findUser != null) {
+                    findUser.homeActive = active
+                    findUser.homeMarker = marker
+                    updateTask(findUser)
+                }
+            } catch (e: Exception) {
+                Log.e("homeMarkerTask", "Error updating home marker", e)
             }
         }
     }
 
     fun finishCourseTask(time: String) {
-        task { retrieveTask(auth.currentUser!!.uid)} then {
-            task -> task.addOnCompleteListener {
-                user -> val finishedUser = user.result
-                val courseID = user.result.courseObject?.id
-                finishedUser.homeActive = false
-                finishedUser.courseObject = null
-                finishedUser.homeMarker = null
-                updateTask(finishedUser)
-                Result.create(finishedUser.uid, finishedUser.firstName, time, courseID)
+        GlobalScope.launch {
+            try {
+                val finishedUser = retrieveTask(auth.currentUser!!.uid).await()
+                if (finishedUser != null) {
+                    val courseID = finishedUser.courseObject?.id
+                    finishedUser.homeActive = false
+                    finishedUser.courseObject = null
+                    finishedUser.homeMarker = null
+                    updateTask(finishedUser)
+                    Result.create(finishedUser.uid, finishedUser.firstName, time, courseID)
+                }
+            } catch (e: Exception) {
+                Log.e("finishCourseTask", "Error finishing course", e)
             }
         }
-
-
     }
 
 }

@@ -15,6 +15,8 @@ import android.util.Log
 import android.view.*
 import android.widget.Toast
 import com.google.firebase.auth.FirebaseAuth
+import com.lxdnz.nz.ariaorienteering.databinding.ActivityMainBinding
+import com.lxdnz.nz.ariaorienteering.databinding.FragmentMainBinding
 import com.lxdnz.nz.ariaorienteering.dialogs.LoginDialogActivity
 import com.lxdnz.nz.ariaorienteering.fragments.HelpFragment
 import com.lxdnz.nz.ariaorienteering.fragments.HomeFragment
@@ -22,12 +24,14 @@ import com.lxdnz.nz.ariaorienteering.fragments.MapFragment
 import com.lxdnz.nz.ariaorienteering.model.User
 import com.lxdnz.nz.ariaorienteering.services.LocationService
 import androidx.lifecycle.lifecycleScope
+import androidx.viewpager.widget.ViewPager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionListener,
         MapFragment.OnFragmentInteractionListener, HelpFragment.OnFragmentInteractionListener {
 
+    private lateinit var binding: ActivityMainBinding
     private var LOGGED_IN = "Logged Out"
     lateinit private var saveState: Bundle
     lateinit var locationService: LocationService
@@ -64,19 +68,20 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
             LOGGED_IN = "Logged In"
         }
 
-        setContentView(R.layout.activity_main)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.toolbar)
         //setUpStartButton()
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = SectionsPagerAdapter(supportFragmentManager)
 
         // Set up the ViewPager with the sections adapter.
-        container.adapter = mSectionsPagerAdapter
+        binding.container.adapter = mSectionsPagerAdapter
 
-        container.addOnPageChangeListener(TabLayout.TabLayoutOnPageChangeListener(tabs))
-        tabs.addOnTabSelectedListener(TabLayout.ViewPagerOnTabSelectedListener(container))
+        binding.container.addOnPageChangeListener(TabLayout.TabLayoutOnPageChangeListener(binding.tabs))
+        binding.tabs.addOnTabSelectedListener(TabLayout.ViewPagerOnTabSelectedListener(binding.container))
 
         // Button Touch Listener
 
@@ -85,7 +90,7 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
         var startX = 0f
         var startY = 0f
 
-        fab.setOnTouchListener(View.OnTouchListener {v: View, event: MotionEvent ->
+        binding.fab.setOnTouchListener(View.OnTouchListener {v: View, event: MotionEvent ->
             when(event.actionMasked) {
                MotionEvent.ACTION_DOWN -> {
                    dX = v.x - event.rawX
@@ -128,14 +133,24 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
             Log.i("Main", "Firebase User active")
             if (sharedPreferences.contains(ACTIVE)) {
                 if (sharedPreferences.getBoolean(ACTIVE, false)) {
-                    task { User.activate(mAuth.currentUser!!.uid) } then { it ->
-                        it.addOnCompleteListener { activateLocalUser() }
+                    lifecycleScope.launch {
+                        try {
+                            User.activate(mAuth.currentUser!!.uid).await()
+                            activateLocalUser()
+                        } catch (e: Exception) {
+                            Log.e("Main", "Error activating user", e)
+                        }
                     }
                 } else {
-                    task { User.retrieve(mAuth.currentUser!!.uid) } then { it ->
-                        it.addOnCompleteListener { user -> if (!user.result.active) {
-                            Log.i("Main", "Adjusting user active")
-                            User.activate(user.result.uid)}
+                    lifecycleScope.launch {
+                        try {
+                            val user = User.retrieve(mAuth.currentUser!!.uid).await()
+                            if (!user.active) {
+                                Log.i("Main", "Adjusting user active")
+                                User.activate(user.uid).await()
+                            }
+                        } catch (e: Exception) {
+                            Log.e("Main", "Error retrieving/activating user", e)
                         }
                     }
                 }
@@ -211,7 +226,7 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
      */
     inner class SectionsPagerAdapter(fm: FragmentManager) : FragmentPagerAdapter(fm) {
 
-        override fun getItem(position: Int): Fragment? = when (position) {
+        override fun getItem(position: Int): Fragment = when (position) {
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
             //return PlaceholderFragment.newInstance(position + 1)
@@ -219,7 +234,7 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
             // Other Fragments Here
             1 -> MapFragment.newInstance(position.toString(), "")
             2 -> HelpFragment.newInstance(position.toString(), "")
-            else -> null
+            else -> PlaceholderFragment()
         }
 
         override fun getCount(): Int {
@@ -233,11 +248,19 @@ class MainActivity : AppCompatActivity(), HomeFragment.OnFragmentInteractionList
      */
     class PlaceholderFragment : Fragment() {
 
+        private var _binding: FragmentMainBinding? = null
+        private val binding get() = _binding!!
+
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                                  savedInstanceState: Bundle?): View? {
-            val rootView = inflater.inflate(R.layout.fragment_main, container, false)
-            rootView.section_label.text = getString(R.string.section_format, arguments?.getInt(ARG_SECTION_NUMBER))
-            return rootView
+                                  savedInstanceState: Bundle?): View {
+            _binding = FragmentMainBinding.inflate(inflater, container, false)
+            binding.sectionLabel.text = getString(R.string.section_format, arguments?.getInt(ARG_SECTION_NUMBER))
+            return binding.root
+        }
+
+        override fun onDestroyView() {
+            super.onDestroyView()
+            _binding = null
         }
 
         companion object {

@@ -235,21 +235,30 @@ Current Structure:
 - ✅ ViewBinding enabled (gradle configuration)
 - ✅ Testing libraries updated (MockK, Coroutines Test)
 
-### Phase 2: Code Migration 🔄 IN PROGRESS
+### Phase 2: Code Migration ✅ COMPLETED (Nov 2025)
 
-#### Current Tasks:
-- 🔄 Import migration to AndroidX in all files
-- 🔄 Kotlin Synthetics → ViewBinding migration
-- ⏳ Remaining Kovenant usage → Coroutines conversion
+**Status:** Production code migration complete with zero compilation errors
 
-#### Files Needing Migration:
-- MainActivity.kt - AndroidX imports, ViewBinding
-- MapFragment.kt - ViewBinding setup
-- HomeFragment.kt - ViewBinding setup
-- HelpFragment.kt - ViewBinding setup
-- CompassActivity.kt - ViewBinding setup
-- LoginDialogActivity.kt - ViewBinding setup
-- Multiple task files - Coroutines usage
+#### Completed Tasks:
+- ✅ **Stage 1:** AndroidX imports - 11 files migrated (Nov 10)
+  - All deprecated `android.support.*` and `android.arch.*` imports replaced
+  - ViewModelProviders → ViewModelProvider pattern applied
+
+- ✅ **Stage 2:** ViewBinding migration - 6 files migrated (Nov 14)
+  - LoginDialogActivity.kt, MainActivity.kt, CompassActivity.kt
+  - HomeFragment.kt, HelpFragment.kt, MapFragment.kt
+  - All Kotlin Synthetics removed, proper binding cleanup in onDestroyView()
+
+- ✅ **Stage 3:** Kovenant → Coroutines - 3 files migrated (Nov 14)
+  - MainActivity.kt, LoginDialogActivity.kt, HomeFragment.kt
+  - All promise-based code converted to lifecycleScope.launch with try/catch
+  - Proper error handling with coroutines
+
+#### Build Status:
+- ✅ `./gradlew assembleDebug` - **SUCCESS** (buildable app achieved)
+- ⚠️ `./gradlew build` - Fails at test compilation (pre-existing PowerMock issue)
+- ✅ Production code compiles with zero errors
+- **Note:** Test migration (PowerMock → MockK) is separate Phase 2.5/Phase 3 task
 
 ### Phase 3: Architecture Improvements 📋 PLANNED
 
@@ -830,6 +839,16 @@ git push origin feature/new-feature-name
 ---
 
 ## Known Issues & Deprecations
+
+### Runtime Errors
+
+1. **NullPointerException in User.retrieve()** 🔴
+   - **Error:** `java.lang.NullPointerException at com.lxdnz.nz.ariaorienteering.model.User$Companion.retrieve(User.kt:44)`
+   - **Context:** Occurs during LoginDialogActivity.onStart() at line 84
+   - **Root Cause:** User.retrieve() is called with a potentially null Firebase currentUser UID. The method does not properly handle null uid parameter.
+   - **Impact:** App crashes when attempting to retrieve user data during login flow
+   - **Fix Required:** Add null safety checks in User.retrieve() to handle null uid gracefully, or ensure currentUser?.uid is checked before calling retrieve()
+   - **Status:** Phase 2 (Buildable) ✅ | Phase 3 (Runtime) 🔴
 
 ### Active Deprecations (Migrating)
 

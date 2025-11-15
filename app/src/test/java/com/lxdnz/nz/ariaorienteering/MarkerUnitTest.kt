@@ -7,46 +7,43 @@ import com.lxdnz.nz.ariaorienteering.model.Marker
 import com.lxdnz.nz.ariaorienteering.model.types.ImageType
 import com.lxdnz.nz.ariaorienteering.model.types.MarkerStatus
 import org.junit.Before
+import org.junit.After
 import org.junit.Test
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4
-import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.modules.junit4.PowerMockRunnerDelegate
-
-import org.mockito.Matchers.any
-import org.mockito.Matchers.anyString
-import org.mockito.Mockito.doAnswer
-
 import org.junit.Assert.*
+import io.mockk.*
 
-@RunWith(PowerMockRunner::class)
-@PowerMockRunnerDelegate(JUnit4::class)
-@PrepareForTest(FirebaseDatabase::class)
 class MarkerUnitTest {
 
-    lateinit var mockedDatabaseReference: DatabaseReference
-    lateinit var testMarker: Marker
+    private lateinit var mockedDatabaseReference: DatabaseReference
+    private lateinit var mockedFirebaseDatabase: FirebaseDatabase
+    private lateinit var testMarker: Marker
 
     @Before
     fun before() {
         //Set up marker to test
         testMarker = Marker(1, ImageType.DEFAULT, 0.0, 0.0)
 
-        // Mock the Firebase References
-        mockedDatabaseReference = PowerMockito.mock(DatabaseReference::class.java)
-        val mockedFirebaseDatabase = PowerMockito.mock(FirebaseDatabase::class.java)
-        PowerMockito.`when`(mockedFirebaseDatabase.reference).thenReturn(mockedDatabaseReference)
-        PowerMockito.mockStatic(FirebaseDatabase::class.java)
-        PowerMockito.`when`(FirebaseDatabase.getInstance()).thenReturn(mockedFirebaseDatabase)
+        // Mock the Firebase References using MockK
+        mockedDatabaseReference = mockk<DatabaseReference>(relaxed = true)
+        mockedFirebaseDatabase = mockk<FirebaseDatabase>()
+        
+        // Mock static FirebaseDatabase
+        mockkStatic(FirebaseDatabase::class)
+        every { FirebaseDatabase.getInstance() } returns mockedFirebaseDatabase
+        every { mockedFirebaseDatabase.reference } returns mockedDatabaseReference
+    }
+
+    @After
+    fun tearDown() {
+        // Clean up static mocks
+        unmockkStatic(FirebaseDatabase::class)
     }
 
     @Test
     fun createMarkerTaskTest() {
-        PowerMockito.`when`(mockedDatabaseReference.child(anyString())).thenReturn(mockedDatabaseReference)
-        // then do Task<Course>
+        every { mockedDatabaseReference.child(any()) } returns mockedDatabaseReference
+        
+        // then do Task<Marker>
         val tcs: TaskCompletionSource<Marker> = TaskCompletionSource()
         mockedDatabaseReference.child(testMarker.id.toString()).setValue(testMarker)
         tcs.setResult(testMarker)

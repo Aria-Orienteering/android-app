@@ -13,8 +13,8 @@ import android.media.RingtoneManager
 import android.graphics.BitmapFactory
 import android.app.PendingIntent
 import android.graphics.Color
-import android.support.v4.app.NotificationCompat
-import android.support.v4.app.TaskStackBuilder
+import androidx.core.app.NotificationCompat
+import androidx.core.app.TaskStackBuilder
 
 import com.lxdnz.nz.ariaorienteering.MainActivity
 import com.lxdnz.nz.ariaorienteering.R
@@ -26,20 +26,32 @@ class GeofenceTransitionService : IntentService("GeofenceTransitionsIntentServic
     private val TAG = "GTIntentService"
 
     override fun onHandleIntent(intent: Intent?) {
-        val geofencingEvent = GeofencingEvent.fromIntent(intent)
-        if (geofencingEvent.hasError()) {
-            (Log.e(TAG, getErrorString(this, geofencingEvent.errorCode)))
+        if (intent == null) {
+            Log.e(TAG, "Intent is null")
             return
         }
+
+        val geofencingEvent = GeofencingEvent.fromIntent(intent)
+        if (geofencingEvent == null) {
+            Log.e(TAG, "GeofencingEvent is null")
+            return
+        }
+
+        if (geofencingEvent.hasError()) {
+            Log.e(TAG, getErrorString(this, geofencingEvent.errorCode))
+            return
+        }
+
         val geofenceTransition = geofencingEvent.geofenceTransition
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ||
                 geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
             val triggeringGeofences = geofencingEvent.triggeringGeofences
-            val geofenceTransitionDetails: String = getGeofenceTransitionDetails(this, geofenceTransition ,triggeringGeofences)
-            sendNotification(geofenceTransitionDetails)
-            Log.i(TAG, geofenceTransitionDetails)
+            if (triggeringGeofences != null) {
+                val geofenceTransitionDetails: String = getGeofenceTransitionDetails(this, geofenceTransition, triggeringGeofences)
+                sendNotification(geofenceTransitionDetails)
+                Log.i(TAG, geofenceTransitionDetails)
+            }
         } else {
-
             Log.e(TAG, getString(R.string.geofence_transition_invalid_type + geofenceTransition))
         }
     }

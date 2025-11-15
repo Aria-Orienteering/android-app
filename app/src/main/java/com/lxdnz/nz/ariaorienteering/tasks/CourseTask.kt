@@ -7,8 +7,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.lxdnz.nz.ariaorienteering.model.Course
 import com.lxdnz.nz.ariaorienteering.model.Marker
-import nl.komponents.kovenant.task
-import nl.komponents.kovenant.then
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.*
 
 object CourseTask {
@@ -29,14 +30,19 @@ object CourseTask {
         val tcs: TaskCompletionSource<Course> = TaskCompletionSource()
 
         mDatabaseReference.child(id).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onCancelled(p0: DatabaseError?) {
-
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("retrieveTask", "Error retrieving course", error.toException())
+                tcs.setException(error.toException())
             }
 
             override fun onDataChange(snapshot: DataSnapshot) {
                 val course = snapshot.getValue(Course::class.java)
-                Log.i("onDataChange", course?.id + ":" + course!!.year)
-                tcs.setResult(course)
+                if (course != null) {
+                    Log.i("onDataChange", course.id + ":" + course.year)
+                    tcs.setResult(course)
+                } else {
+                    tcs.setException(Exception("Course not found"))
+                }
             }
         })
         return tcs.task
@@ -47,8 +53,9 @@ object CourseTask {
         val tcs: TaskCompletionSource<List<Course?>> = TaskCompletionSource()
 
         mDatabaseReference.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onCancelled(p0: DatabaseError?) {
-
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("retrieveAllTask", "Error retrieving courses", error.toException())
+                tcs.setException(error.toException())
             }
 
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -72,10 +79,19 @@ object CourseTask {
          */
         fun <E> List<E>.random(): E? = if (size > 0) get(Random().nextInt(size)) else null
 
-        task { retrieveAllTask()} then {
-            it.addOnCompleteListener {
-                courses -> val course = courses.result.filter {course -> course?.year == 5  }.random()
-                tcs.setResult(course)}
+        GlobalScope.launch {
+            try {
+                val courses = retrieveAllTask().await()
+                val course = courses.filter { course -> course?.year == 5 }.random()
+                if (course != null) {
+                    tcs.setResult(course)
+                } else {
+                    tcs.setException(Exception("No suitable course found"))
+                }
+            } catch (e: Exception) {
+                Log.e("selectRandomCourseTask", "Error selecting random course", e)
+                tcs.setException(e)
+            }
         }
 
         return tcs.task
@@ -102,13 +118,15 @@ object CourseTask {
         }
 
         // Task to update course in Firebase
-        task {
-            retrieveTask(courseId)
-        } then {
-            task -> task.addOnCompleteListener {
-                res -> val updateCourse = res.result
-                updateMarkerList(updateCourse)
-                createTask(updateCourse)
+        GlobalScope.launch {
+            try {
+                val updateCourse = retrieveTask(courseId).await()
+                if (updateCourse != null) {
+                    updateMarkerList(updateCourse)
+                    createTask(updateCourse)
+                }
+            } catch (e: Exception) {
+                Log.e("addMarker", "Error adding marker to course", e)
             }
         }
     }

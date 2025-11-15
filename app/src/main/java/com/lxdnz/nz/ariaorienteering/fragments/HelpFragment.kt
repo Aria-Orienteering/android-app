@@ -1,19 +1,19 @@
 package com.lxdnz.nz.ariaorienteering.fragments
 
-import android.arch.lifecycle.Observer
-import android.arch.lifecycle.ViewModelProviders
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
-import android.support.v4.app.Fragment
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 
 import com.lxdnz.nz.ariaorienteering.R
+import com.lxdnz.nz.ariaorienteering.databinding.FragmentHelpBinding
 import com.lxdnz.nz.ariaorienteering.model.User
 import com.lxdnz.nz.ariaorienteering.viewmodel.UserViewModel
-import kotlinx.android.synthetic.main.fragment_help.*
 
 // TODO: Rename parameter arguments, choose names that match
 // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -35,6 +35,9 @@ class HelpFragment : Fragment() {
     private var param2: String? = null
     private var listener: OnFragmentInteractionListener? = null
 
+    private var _binding: FragmentHelpBinding? = null
+    private val binding get() = _binding!!
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -49,20 +52,26 @@ class HelpFragment : Fragment() {
         /**
          * Keep track of the User details
          */
+        _binding = FragmentHelpBinding.inflate(inflater, container, false)
 
-        val userViewModel: UserViewModel = ViewModelProviders.of(this).get(UserViewModel::class.java)
+        val userViewModel: UserViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
         val userLiveData = userViewModel.getLiveUserData()
-        userLiveData.observe(this, Observer { user: User? ->
+        userLiveData.observe(viewLifecycleOwner, Observer { user: User? ->
             if (user != null) {
                 UpdateUI(user)
             }
         })
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_help, container, false)
+        // Return the root view from binding
+        return binding.root
     }
 
     private fun UpdateUI(user: User) {
-        help_text.text = "Hello " + user.firstName + "! Do you need help with course " + user.courseObject?.id + "?"
+        binding.helpText.text = "Hello " + user.firstName + "! Do you need help with course " + user.courseObject?.id + "?"
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     // TODO: Rename method, update argument and hook method into UI event
